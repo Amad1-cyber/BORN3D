@@ -1,0 +1,61 @@
+[debug] [2026-04-13T09:57:24.976Z] ----------------------------------------------------------------------
+[debug] [2026-04-13T09:57:24.979Z] Command:       /usr/local/bin/node /Users/user/.npm/_npx/ba4f1959e38407b5/node_modules/.bin/firebase init dataconnect --project demo-no-project
+[debug] [2026-04-13T09:57:24.979Z] CLI Version:   15.14.0
+[debug] [2026-04-13T09:57:24.979Z] Platform:      darwin
+[debug] [2026-04-13T09:57:24.979Z] Node Version:  v24.14.1
+[debug] [2026-04-13T09:57:24.979Z] Time:          Mon Apr 13 2026 02:57:24 GMT-0700 (Pacific Daylight Time)
+[debug] [2026-04-13T09:57:24.979Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-04-13T09:57:24.981Z] >>> [apiv2][query] GET https://firebase-public.firebaseio.com/cli.json [none]
+[info] 
+     ######## #### ########  ######## ########     ###     ######  ########
+     ##        ##  ##     ## ##       ##     ##  ##   ##  ##       ##
+     ######    ##  ########  ######   ########  #########  ######  ######
+     ##        ##  ##    ##  ##       ##     ## ##     ##       ## ##
+     ##       #### ##     ## ######## ########  ##     ##  ######  ########
+
+You're about to initialize a Firebase project in this directory:
+
+  /Users/user/Desktop/Born 3D/styles/Avatars/Workspace
+
+[info] 
+=== Project Setup
+[info] 
+[info] First, let's associate this project directory with a Firebase project.
+[info] You can create multiple project aliases by running firebase use --add, 
+[info] 
+[info] Skipping Firebase project setup because a demo project is provided
+[info] 
+=== Dataconnect Setup
+[warn] ⚠  dataconnect: Cannot detect an existing app in the current directory. 
+[debug] [2026-04-13T09:57:26.008Z] <<< [apiv2][status] GET https://firebase-public.firebaseio.com/cli.json 200
+[debug] [2026-04-13T09:57:26.008Z] <<< [apiv2][body] GET https://firebase-public.firebaseio.com/cli.json {"cloudBuildErrorAfter":1594252800000,"cloudBuildWarnAfter":1590019200000,"defaultNode10After":1594252800000,"minVersion":"3.0.5","node8DeploysDisabledAfter":1613390400000,"node8RuntimeDisabledAfter":1615809600000,"node8WarnAfter":1600128000000}
+[debug] [2026-04-13T09:57:27.017Z] ----------------------------------------------------------------------
+[debug] [2026-04-13T09:57:27.019Z] Command:       /usr/local/bin/node /Users/user/.npm/_npx/ba4f1959e38407b5/node_modules/.bin/firebase init dataconnect --project demo-no-project
+[debug] [2026-04-13T09:57:27.020Z] CLI Version:   15.14.0
+[debug] [2026-04-13T09:57:27.020Z] Platform:      darwin
+[debug] [2026-04-13T09:57:27.020Z] Node Version:  v24.14.1
+[debug] [2026-04-13T09:57:27.020Z] Time:          Mon Apr 13 2026 02:57:27 GMT-0700 (Pacific Daylight Time)
+[debug] [2026-04-13T09:57:27.020Z] ----------------------------------------------------------------------
+[debug] 
+[info] 
+     ######## #### ########  ######## ########     ###     ######  ########
+     ##        ##  ##     ## ##       ##     ##  ##   ##  ##       ##
+     ######    ##  ########  ######   ########  #########  ######  ######
+     ##        ##  ##    ##  ##       ##     ## ##     ##       ## ##
+     ##       #### ##     ## ######## ########  ##     ##  ######  ########
+
+You're about to initialize a Firebase project in this directory:
+
+  /Users/user/Desktop/Born 3D/styles/Avatars/Workspace
+
+[info] 
+=== Project Setup
+[info] 
+[info] First, let's associate this project directory with a Firebase project.
+[info] You can create multiple project aliases by running firebase use --add, 
+[info] 
+[info] Skipping Firebase project setup because a demo project is provided
+[info] 
+=== Dataconnect Setup
+[warn] ⚠  dataconnect: Cannot detect an existing app in the current directory. 
