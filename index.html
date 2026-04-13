@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Born 3D - Pure 3D Editor v0.5.0 (Beta)</title>
+  <meta name="author" content="Ahmed Othmen">
+  <link rel="stylesheet" href="styles/main.css">
+</head>
+<body>
+  <header>
+      <h1>Born 3D <span style="font-size:0.6em;font-weight:normal;vertical-align:middle;">v0.5.0 (Beta)</span></h1>
+    <p>Created by: Ahmed Othmen</p>
+    <nav>
+      <button id="editorModeBtn">Editor Mode</button>
+      <button id="gameModeBtn">Game Mode (Born3D)</button>
+    </nav>
+  </header>
+  <main>
+    <aside id="explorer">
+      <h2>Texture Explorer</h2>
+      <input type="file" id="textureInput" accept="image/*">
+      <div id="textureList"></div>
+    </aside>
+    <section id="viewport">
+      <!-- 3D canvas will be injected here -->
+    </section>
+  </main>
+  <footer>
+    <small>&copy; 2026 Ahmed Othmen | Born 3D v0.0.1</small>
+  </footer>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/loaders/OBJLoader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/loaders/FBXLoader.js"></script>
+  <script src="src/propLoader.js"></script>
+  <script src="src/app.js"></script>
+</body>
+</html>
