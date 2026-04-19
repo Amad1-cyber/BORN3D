@@ -1,60 +1,70 @@
-# Born 3D Backend Deployment Guide
+# Born 3D Deployment Guide
 
-This guide will help you deploy your backend server to the cloud (Render, Railway, or Heroku) and connect your frontend.
+Deploy the play site and backend as separate Render web services.
 
 ---
 
-## 1. Prepare Environment Variables
+## 1. Frontend service
 
-Copy `.env.example` to `.env` and fill in your values:
+Create a Render Web Service from the repo root:
 
-```
+- Name: `born3d-play`
+- Build command: `npm install`
+- Start command: `npm start`
+- Health check path: `/play`
+
+This serves the game at `/play` through `script/local-server.js`.
+
+---
+
+## 2. Backend service
+
+Create a second Render Web Service from `cloud-backend`:
+
+- Name: `born3d-backend`
+- Build command: `npm install`
+- Start command: `npm start`
+- Health check path: `/`
+
+Required environment variables:
+
+```bash
 MONGODB_URI=your_mongodb_atlas_connection_string
 JWT_SECRET=your_super_secret_key
-PORT=4000
+PORT=10000
 ```
 
-- For MongoDB Atlas, create a free cluster at https://www.mongodb.com/cloud/atlas and get your connection string.
-- Set a strong JWT_SECRET (any random string).
+---
+
+## 3. Frontend-to-backend link
+
+The frontend already points at the backend host used by the game. If you need to override it manually, use:
+
+```html
+https://born3d-play.onrender.com/play?backend=https://born3d-backend.onrender.com
+```
 
 ---
 
-## 2. Deploy to Render (Recommended)
+## 4. Webador embed
 
-1. Go to https://render.com/ and sign up.
-2. Click "New +" → "Web Service".
-3. Connect your GitHub repo or upload your code.
-4. Set the root directory to `cloud-backend`.
-5. Set the build command: `npm install`
-6. Set the start command: `npm start`
-7. Add environment variables from your `.env` file.
-8. Click "Create Web Service".
+Use this iframe on `www.othman-creativity.com/play`:
 
-Your backend will be live at a public URL (e.g., `https://born3d-backend.onrender.com`).
-
----
-
-## 3. Alternative: Railway or Heroku
-
-- Railway: https://railway.app/
-- Heroku: https://heroku.com/
-
-Both support Node.js and MongoDB. Use similar steps as above.
+```html
+<iframe
+  src="https://born3d-play.onrender.com/play?backend=https://born3d-backend.onrender.com"
+  style="width:100%;height:900px;border:0;border-radius:16px;overflow:hidden;"
+  allow="fullscreen; autoplay"
+></iframe>
+```
 
 ---
 
-## 4. Test Your API
+## 5. Test
 
-After deployment, test your API endpoints (e.g., `/api/register`, `/api/login`, `/api/save-character`, `/api/load-character`) using Postman or curl.
+After both services are live, open:
 
----
+- `https://born3d-play.onrender.com/play`
+- `https://born3d-backend.onrender.com`
 
-## 5. Connect Frontend
-
-Update your frontend code to use the deployed backend URL for all API requests.
-
----
-
-## 6. Need Help?
-
-Let me know if you want step-by-step help for a specific platform or have questions about connecting your frontend.
+If login still fails, check the backend service logs and confirm `MONGODB_URI` is set correctly.
