@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Born 3D - Game Play</title>
+  <meta name="author" content="Ahmed Othmen">
+  <link rel="stylesheet" href="styles/main.css?v=20260419-gameplay1">
+  <link rel="stylesheet" href="src/game.css?v=20260419-gameplay1">
+</head>
+<body class="game-page">
+  <div class="game-play-toolbar" aria-label="Game site tools">
+    <span class="game-play-badge">Game Site</span>
+    <button id="copyGameLinkBtn" type="button">Copy Game Link</button>
+  </div>
+  <main class="main-flex-row">
+    <section id="viewport" class="viewport-flex">
+      <!-- 3D canvas will be injected here -->
+    </section>
+  </main>
+  <script>
+    window.BORN3D_GAME_ONLY = true;
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.145.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.145.0/examples/js/loaders/OBJLoader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.145.0/examples/js/libs/fflate.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.145.0/examples/js/loaders/FBXLoader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.145.0/examples/js/loaders/GLTFLoader.js"></script>
+  <script src="src/propLoader.js?v=20260419-gameplay1"></script>
+  <script src="src/app.js?v=20260419-gameplay1"></script>
+  <script>
+    const copyGameLinkBtn = document.getElementById("copyGameLinkBtn");
+    if (copyGameLinkBtn) {
+      const GAME_BACKEND_STORAGE_KEY = "born3d_backend_url";
+      const isPrivateOrLocalHost = (hostname) => {
+        const host = String(hostname || "").toLowerCase();
+        if (!host) return false;
+        if (host === "localhost" || host === "127.0.0.1" || host === "0.0.0.0") return true;
+        if (/^\d+\.\d+\.\d+\.\d+$/.test(host)) {
+          return (
+            host.startsWith("10.") ||
+            host.startsWith("192.168.") ||
+            /^172\.(1[6-9]|2\d|3[0-1])\./.test(host)
+          );
+        }
+        return false;
+      };
+      const buildShareUrl = () => {
+        const url = new URL(window.location.href);
+        const useCanonicalLocalPorts = isPrivateOrLocalHost(url.hostname);
+        try {
+          const storedBackend = window.localStorage.getItem(GAME_BACKEND_STORAGE_KEY);
+          if (storedBackend && !url.searchParams.get("backend")) {
+            url.searchParams.set("backend", storedBackend);
+          }
+        } catch (error) {}
+        if (useCanonicalLocalPorts) {
+          url.pathname = "/play";
+          url.port = "3000";
+          if (!url.searchParams.get("backend")) {
+            url.searchParams.set("backend", `${url.protocol}//${url.hostname}:4000`);
+          }
+        }
+        return url.toString();
+      };
+
+      copyGameLinkBtn.addEventListener("click", async () => {
+        const gameUrl = buildShareUrl();
+        try {
+          await navigator.clipboard.writeText(gameUrl);
+          copyGameLinkBtn.textContent = "Copied Game Link";
+          window.setTimeout(() => {
+            copyGameLinkBtn.textContent = "Copy Game Link";
+          }, 1500);
+        } catch (error) {
+          window.prompt("Copy this game link", gameUrl);
+        }
+      });
+    }
+  </script>
+</body>
+</html>
