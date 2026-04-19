@@ -1,0 +1,11 @@
+{
+  "name": "born-3d",
+  "version": "0.6.0",
+  "description": "Pure 3D Editor & Game Engine",
+  "scripts": {
+    "start": "node script/local-server.js",
+    "backend": "cd cloud-backend && npm start"
+  },
+  "author": "Ahmed Othmen",
+  "license": "MIT"
+}
