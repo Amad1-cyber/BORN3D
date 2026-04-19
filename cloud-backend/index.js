@@ -56,7 +56,9 @@ function serveRootFile(relativePath) {
   };
 }
 
-app.get('/', serveRootFile('index.html'));
+app.get('/', (req, res) => {
+  res.redirect(302, '/play');
+});
 app.get('/index.html', serveRootFile('index.html'));
 app.get('/play', serveRootFile('play.html'));
 app.get('/play.html', serveRootFile('play.html'));
