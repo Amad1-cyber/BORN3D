@@ -2,12 +2,14 @@ require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const path = require('path');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
 const PORT = process.env.PORT || 4000;
+const ROOT_DIR = path.resolve(__dirname, '..');
 
 mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
@@ -47,6 +49,20 @@ const User = mongoose.model('User', userSchema);
 
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+
+function serveRootFile(relativePath) {
+  return (req, res) => {
+    res.sendFile(path.join(ROOT_DIR, relativePath));
+  };
+}
+
+app.get('/', serveRootFile('index.html'));
+app.get('/index.html', serveRootFile('index.html'));
+app.get('/play', serveRootFile('play.html'));
+app.get('/play.html', serveRootFile('play.html'));
+app.get('/game', serveRootFile('game.html'));
+app.get('/game.html', serveRootFile('game.html'));
+app.use(express.static(ROOT_DIR, { dotfiles: 'ignore', index: false }));
 
 // Register
 app.post('/api/register', async (req, res) => {
@@ -104,6 +120,6 @@ app.post('/api/logout', auth, (req, res) => {
   res.json({ success: true });
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`Born 3D Cloud Backend running on port ${PORT}`);
 });
