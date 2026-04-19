@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Born 3D - Game Mode (Born3D)</title>
+  <meta name="author" content="Ahmed Othmen">
+  <meta name="theme-color" content="#091018">
+  <link rel="stylesheet" href="styles/main.css?v=20260419-gameplay1">
+  <link rel="stylesheet" href="src/game.css?v=20260419-gameplay1">
+</head>
+<body class="game-page">
+  <main class="main-flex-row">
+    <section id="viewport" class="viewport-flex">
+      <!-- 3D canvas will be injected here -->
+    </section>
+  </main>
+  <script>
+    window.BORN3D_GAME_ONLY = true;
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.145.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.145.0/examples/js/loaders/OBJLoader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.145.0/examples/js/libs/fflate.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.145.0/examples/js/loaders/FBXLoader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.145.0/examples/js/loaders/GLTFLoader.js"></script>
+  <script src="src/propLoader.js?v=20260419-gameplay1"></script>
+  <script src="src/app.js?v=20260419-gameplay1"></script>
+</body>
+</html>
