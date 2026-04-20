@@ -3,14 +3,6 @@ services:
     name: born3d-play
     runtime: node
     plan: free
-    rootDir: .
-    buildCommand: npm install
-    startCommand: npm start
-    healthCheckPath: /play
-  - type: web
-    name: born3d-backend
-    runtime: node
-    plan: free
     rootDir: cloud-backend
     buildCommand: npm install
     startCommand: npm start
