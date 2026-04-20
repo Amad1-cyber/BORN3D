@@ -39,92 +39,6 @@
     }
   }
 
-  function injectGateStyles() {
-    if (document.getElementById("born3dPlayInjectedStyles")) {
-      return;
-    }
-
-    const style = document.createElement("style");
-    style.id = "born3dPlayInjectedStyles";
-    style.textContent = `
-      .born3d-play-gate__form { display: grid; gap: 10px; }
-      .born3d-play-gate__field { display: grid; gap: 6px; }
-      .born3d-play-gate__field span {
-        color: rgba(227, 241, 253, 0.82);
-        font-size: 0.74rem;
-        font-weight: 800;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-      }
-      .born3d-play-gate__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-      .born3d-play-gate__hint { color: rgba(204, 227, 243, 0.72); font-size: 0.76rem; line-height: 1.45; }
-      .born3d-play-gate__actions button,
-      .born3d-play-taskbar button { width: auto; min-width: 0; }
-      @media (max-width: 560px) { .born3d-play-gate__grid { grid-template-columns: 1fr; } }
-    `;
-    document.head.appendChild(style);
-  }
-
-  function ensureGateMarkup() {
-    const gate = $(gateId);
-    if (!gate || document.getElementById("born3dPlayLoginForm")) {
-      return gate;
-    }
-
-    const log = $(logId);
-    const actions = gate.querySelector(".born3d-play-gate__actions");
-    const form = document.createElement("form");
-    form.id = "born3dPlayLoginForm";
-    form.className = "born3d-play-gate__form";
-    form.innerHTML = `
-      <label class="born3d-play-gate__field">
-        <span>Backend URL</span>
-        <input id="born3dPlayBackendInput" type="text" placeholder="https://born3d-play.onrender.com">
-      </label>
-      <div class="born3d-play-gate__grid">
-        <label class="born3d-play-gate__field">
-          <span>Username</span>
-          <input id="born3dPlayUserNameInput" type="text" autocomplete="username" placeholder="Enter username">
-        </label>
-        <label class="born3d-play-gate__field">
-          <span>Pin</span>
-          <input id="born3dPlayPinInput" type="password" autocomplete="current-password" placeholder="Enter pin">
-        </label>
-      </div>
-      <div class="born3d-play-gate__grid">
-        <label class="born3d-play-gate__field">
-          <span>Avatar</span>
-          <select id="born3dPlayAvatarSelect">
-            <option value="male">Male</option>
-            <option value="female">Female</option>
-          </select>
-        </label>
-        <label class="born3d-play-gate__field">
-          <span>Shard</span>
-          <select id="born3dPlayShardSelect">
-            <option value="odd-ironic-shard">Odd Ironic Shard</option>
-          </select>
-        </label>
-      </div>
-      <div id="born3dPlayBackendLabel" class="born3d-play-gate__hint">The play page will reuse the backend from the URL or the field above.</div>
-    `;
-
-    if (log && log.parentNode === gate) {
-      gate.insertBefore(form, log.nextSibling);
-    } else if (actions && actions.parentNode === gate) {
-      gate.insertBefore(form, actions);
-    } else {
-      gate.appendChild(form);
-    }
-
-    const hideButton = $("born3dPlayHideBtn");
-    if (hideButton && hideButton.parentNode === gate) {
-      hideButton.textContent = "Hide Gate";
-    }
-
-    return gate;
-  }
-
   function appendLog(line) {
     const log = $(logId);
     if (!log) {
@@ -159,11 +73,80 @@
     }
   }
 
+  function setGateCompact(compact) {
+    const gate = $(gateId);
+    if (gate) {
+      gate.dataset.compact = compact ? "true" : "false";
+    }
+    const button = $("born3dPlayCompactBtn");
+    const taskButton = $("born3dPlayTaskCompactBtn");
+    if (button) {
+      button.textContent = compact ? "Expand" : "Compact";
+    }
+    if (taskButton) {
+      taskButton.textContent = compact ? "Expand" : "Compact";
+    }
+  }
+
+  function toggleConsoleVisibility(forceVisible) {
+    const log = $(logId);
+    if (!log) {
+      return;
+    }
+    const visible = typeof forceVisible === "boolean" ? forceVisible : log.hidden;
+    log.hidden = !visible;
+    const button = $("born3dPlayTaskConsoleBtn");
+    if (button) {
+      button.textContent = visible ? "Console" : "Console";
+    }
+  }
+
   function readStoredBackend() {
     try {
-      return normalizeBackendUrl(window.localStorage.getItem(BACKEND_KEY));
+      const storedBackend = normalizeBackendUrl(window.localStorage.getItem(BACKEND_KEY));
+      if (shouldReplaceStoredBackend(storedBackend)) {
+        return "";
+      }
+      return storedBackend;
     } catch (error) {
       return "";
+    }
+  }
+
+  function getDefaultBackend() {
+    const explicitDefault = normalizeBackendUrl(window.BORN3D_DEFAULT_BACKEND);
+    if (explicitDefault) {
+      return explicitDefault;
+    }
+
+    if (window.location && /\.onrender\.com$/i.test(window.location.hostname)) {
+      return "https://born3d-backend.onrender.com";
+    }
+
+    if (window.location && window.location.hostname) {
+      return `${window.location.protocol}//${window.location.hostname}:4000`;
+    }
+
+    return "";
+  }
+
+  function shouldReplaceStoredBackend(storedBackend) {
+    const backend = normalizeBackendUrl(storedBackend);
+    if (!backend) {
+      return false;
+    }
+
+    const defaultBackend = getDefaultBackend();
+    if (!defaultBackend) {
+      return false;
+    }
+
+    try {
+      const backendHost = new URL(backend).hostname;
+      const defaultHost = new URL(defaultBackend).hostname;
+      return backendHost === window.location.hostname && defaultHost !== backendHost;
+    } catch (error) {
+      return false;
     }
   }
 
@@ -176,7 +159,7 @@
   }
 
   function syncBackendTarget(value) {
-    const backend = normalizeBackendUrl(value);
+    const backend = shouldReplaceStoredBackend(value) ? getDefaultBackend() : normalizeBackendUrl(value);
     const backendInput = $("born3dPlayBackendInput");
     if (!backend) {
       setStatus("Enter a valid backend URL.");
@@ -200,6 +183,8 @@
       backendLabel.textContent = `Using backend: ${backend}`;
     }
 
+    setStatus(`Backend target set to ${backend}.`);
+    appendLog(`Backend target saved: ${backend}.`);
     return true;
   }
 
@@ -239,7 +224,7 @@
       shardSelect.value = "odd-ironic-shard";
     }
     if (backendInput && !backendInput.value.trim()) {
-      backendInput.value = readStoredBackend() || `${window.location.origin}`;
+      backendInput.value = readStoredBackend() || getDefaultBackend();
     }
     if (pinInput) {
       pinInput.value = "";
@@ -259,13 +244,206 @@
     };
   }
 
+  function getBackendUrl() {
+    const backendInput = $("born3dPlayBackendInput");
+    const fromInput = normalizeBackendUrl(backendInput && backendInput.value);
+    if (fromInput) {
+      return fromInput;
+    }
+
+    const storedBackend = readStoredBackend();
+    if (storedBackend) {
+      return storedBackend;
+    }
+
+    return getDefaultBackend();
+  }
+
+  function readGateAuthValue(id, fallbackId) {
+    const element = $(id) || (fallbackId ? document.getElementById(fallbackId) : null);
+    return element && typeof element.value === "string" ? element.value.trim() : "";
+  }
+
+  function resolveAuthCredentials(credentials = null) {
+    return {
+      name: credentials && typeof credentials.name === "string"
+        ? credentials.name.trim()
+        : readGateAuthValue("born3dPlayUserNameInput", "userNameInput"),
+      pin: credentials && typeof credentials.pin === "string"
+        ? credentials.pin.trim()
+        : readGateAuthValue("born3dPlayPinInput", "userPinInput"),
+      avatarGender: credentials && typeof credentials.avatarGender === "string"
+        ? credentials.avatarGender.trim().toLowerCase()
+        : (readGateAuthValue("born3dPlayAvatarSelect") || "male"),
+      shard: credentials && typeof credentials.shard === "string"
+        ? credentials.shard.trim()
+        : (readGateAuthValue("born3dPlayShardSelect") || "odd-ironic-shard"),
+      deviceId: credentials && typeof credentials.deviceId === "string"
+        ? credentials.deviceId.trim()
+        : getOrCreateDeviceId()
+    };
+  }
+
+  function getOrCreateDeviceId() {
+    try {
+      const key = "born3d_device_id";
+      const existing = String(window.localStorage.getItem(key) || "").trim();
+      if (existing) {
+        return existing;
+      }
+      const generated = window.crypto && typeof window.crypto.randomUUID === "function"
+        ? window.crypto.randomUUID()
+        : `born3d-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+      window.localStorage.setItem(key, generated);
+      return generated;
+    } catch (error) {
+      return `born3d-${Date.now()}`;
+    }
+  }
+
+  async function postJson(url, payload, headers = {}) {
+    const response = await window.fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...headers
+      },
+      body: JSON.stringify(payload)
+    });
+    const data = await response.json();
+    return { response, data };
+  }
+
+  function installAuthBridge() {
+    window.born3dSetBackendUrl = function (value) {
+      const backend = normalizeBackendUrl(value) || getDefaultBackend();
+      if (!backend) {
+        return "";
+      }
+
+      try {
+        window.localStorage.setItem(BACKEND_KEY, backend);
+      } catch (error) {}
+
+      const backendInput = $("born3dPlayBackendInput");
+      if (backendInput && backendInput.value !== backend) {
+        backendInput.value = backend;
+      }
+
+      const backendLabel = $("born3dPlayBackendLabel");
+      if (backendLabel) {
+        backendLabel.textContent = `Using backend: ${backend}`;
+      }
+
+      return backend;
+    };
+
+    window.userRegister = async function (credentials = null) {
+      const creds = resolveAuthCredentials(credentials);
+      const backend = window.born3dSetBackendUrl(getBackendUrl());
+      if (!creds.name || !creds.pin) {
+        setStatus("Enter both a username and a pin to register.");
+        appendLog("Register blocked: missing username or pin.");
+        return { success: false };
+      }
+
+      appendLog(`Registering ${creds.name}...`);
+      setStatus(`Registering ${creds.name}...`);
+      try {
+        const { data } = await postJson(`${backend}/api/register`, {
+          username: creds.name,
+          pin: creds.pin,
+          avatarGender: creds.avatarGender,
+          shard: creds.shard,
+          deviceId: creds.deviceId
+        });
+        if (data && data.success) {
+          try {
+            window.localStorage.setItem("born3d_account_username", creds.name);
+          } catch (error) {}
+          setStatus(`User "${creds.name}" registered. You can log in now.`);
+          appendLog(`Registered ${creds.name}.`);
+        } else {
+          setStatus((data && data.error) || "Registration failed.");
+          appendLog(`Registration failed for ${creds.name}.`);
+        }
+        return data || { success: false };
+      } catch (error) {
+        setStatus("Registration error.");
+        appendLog(`Registration error: ${error && error.message ? error.message : "unknown error"}.`);
+        return { success: false };
+      }
+    };
+
+    window.userLogin = async function (credentials = null) {
+      const creds = resolveAuthCredentials(credentials);
+      const backend = window.born3dSetBackendUrl(getBackendUrl());
+      if (!creds.name || !creds.pin) {
+        setStatus("Enter both a username and a pin to log in.");
+        appendLog("Login blocked: missing username or pin.");
+        return { token: "" };
+      }
+
+      appendLog(`Logging in as ${creds.name}...`);
+      setStatus(`Signing in as ${creds.name}...`);
+      try {
+        const { data } = await postJson(`${backend}/api/login`, {
+          username: creds.name,
+          pin: creds.pin,
+          avatarGender: creds.avatarGender,
+          shard: creds.shard,
+          deviceId: creds.deviceId
+        });
+        if (data && data.token) {
+          window._born3d_token = data.token;
+          try {
+            window.localStorage.setItem("born3d_account_username", creds.name);
+          } catch (error) {}
+          setStatus(`Logged in as ${creds.name}.`);
+          appendLog(`Logged in as ${creds.name}.`);
+          if (typeof window.setMode === "function") {
+            try {
+              window.setMode("game");
+            } catch (error) {}
+          }
+        } else {
+          setStatus((data && data.error) || "Login failed.");
+          appendLog(`Login failed for ${creds.name}.`);
+        }
+        return data || { token: "" };
+      } catch (error) {
+        setStatus("Login error.");
+        appendLog(`Login error: ${error && error.message ? error.message : "unknown error"}.`);
+        return { token: "" };
+      }
+    };
+
+    window.userLogout = async function () {
+      const backend = getBackendUrl();
+      try {
+        if (backend && window._born3d_token) {
+          await window.fetch(`${backend}/api/logout`, {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${window._born3d_token}`
+            }
+          });
+        }
+      } catch (error) {}
+
+      window._born3d_token = null;
+      setStatus("Logged out.");
+      appendLog("Logged out.");
+      return { success: true };
+    };
+  }
+
   async function submitLogin() {
     const creds = getGateCredentials();
     const backendInput = $("born3dPlayBackendInput");
     if (backendInput) {
       syncBackendTarget(backendInput.value);
     }
-
     if (!creds.name || !creds.pin) {
       setStatus("Enter both a username and a pin to log in.");
       return;
@@ -303,7 +481,6 @@
     if (backendInput) {
       syncBackendTarget(backendInput.value);
     }
-
     if (!creds.name || !creds.pin) {
       setStatus("Enter both a username and a pin to register.");
       return;
@@ -344,6 +521,8 @@
       $("born3dPlayTaskRetryBtn")
     ].filter(Boolean);
     const gateToggleButtons = [$("born3dPlayTaskGateBtn"), $("born3dPlayHideBtn")].filter(Boolean);
+    const compactButtons = [$("born3dPlayCompactBtn"), $("born3dPlayTaskCompactBtn")].filter(Boolean);
+    const consoleButtons = [$("born3dPlayTaskConsoleBtn")].filter(Boolean);
     const loginForm = $("born3dPlayLoginForm");
     const loginButton = $("born3dPlayLoginBtn");
     const registerButton = $("born3dPlayRegisterBtn");
@@ -365,6 +544,22 @@
           return;
         }
         gate.hidden = !gate.hidden;
+      });
+    });
+
+    compactButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        const gate = $(gateId);
+        const nextCompact = !(gate && gate.dataset.compact === "true");
+        setGateCompact(nextCompact);
+      });
+    });
+
+    consoleButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        const log = $(logId);
+        const nextVisible = !(log && log.hidden);
+        toggleConsoleVisibility(nextVisible);
       });
     });
 
@@ -417,30 +612,31 @@
     }
   }
 
-  function syncBackendFromQuery() {
-    const backend = normalizeBackendUrl(new URL(window.location.href).searchParams.get("backend"));
-    if (backend) {
-      try {
-        window.localStorage.setItem(BACKEND_KEY, backend);
-      } catch (error) {}
-      syncBackendTarget(backend);
-      appendLog("Backend URL saved from the page query.");
-      return;
-    }
-
-    const stored = readStoredBackend();
-    if (stored) {
-      syncBackendTarget(stored);
-    }
-  }
-
   function boot() {
     ensureHiddenExplorer();
-    injectGateStyles();
-    ensureGateMarkup();
+    installAuthBridge();
+    setGateCompact(false);
+    toggleConsoleVisibility(true);
     fillGateDefaults();
-    syncBackendFromQuery();
     wireControls();
+
+    const queryBackend = normalizeBackendUrl(new URL(window.location.href).searchParams.get("backend"));
+    if (queryBackend) {
+      syncBackendTarget(queryBackend);
+    } else if (readStoredBackend()) {
+      syncBackendTarget(readStoredBackend());
+    } else {
+      const backendInput = $("born3dPlayBackendInput");
+      if (backendInput) {
+        backendInput.value = getDefaultBackend();
+      }
+      const backendLabel = $("born3dPlayBackendLabel");
+      if (backendLabel) {
+        backendLabel.textContent = getDefaultBackend()
+          ? `Using default backend: ${getDefaultBackend()}`
+          : "Set the backend URL for login.";
+      }
+    }
 
     appendLog("Play page booted.");
     appendLog("Game gate is ready.");
