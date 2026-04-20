@@ -7,9 +7,216 @@
   <meta name="author" content="Ahmed Othmen">
   <meta name="theme-color" content="#091018">
   <link rel="stylesheet" href="styles/main.css?v=20260419-gameplay1">
-  <link rel="stylesheet" href="src/game.css?v=20260419-gameplay1">
+  <style>
+    .game-page {
+      overflow: hidden;
+      min-height: 100vh;
+      background: #091018;
+    }
+
+    .game-page main {
+      position: fixed;
+      inset: 0;
+      display: block;
+      padding: 0;
+      margin: 0;
+    }
+
+    .game-page #viewport {
+      width: 100vw;
+      height: 100vh;
+      max-width: none;
+      aspect-ratio: auto;
+      justify-self: stretch;
+      align-self: stretch;
+      border-radius: 0;
+      border: none;
+    }
+
+    .game-play-toolbar {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      z-index: 5200;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      pointer-events: none;
+    }
+
+    .game-play-badge {
+      pointer-events: none;
+      padding: 0.45rem 0.8rem;
+      border-radius: 999px;
+      background: rgba(8, 14, 22, 0.82);
+      border: 1px solid rgba(120, 169, 214, 0.18);
+      color: #eaf6ff;
+      font-size: 0.74rem;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      box-shadow: 0 14px 30px rgba(0, 0, 0, 0.28);
+    }
+
+    .game-play-toolbar button {
+      pointer-events: auto;
+      width: auto;
+      min-width: 0;
+      padding: 0.72rem 0.95rem;
+    }
+
+    .born3d-play-gate,
+    .born3d-play-taskbar {
+      position: fixed;
+      z-index: 5400;
+      color: #eef8ff;
+      background: rgba(8, 14, 22, 0.9);
+      border: 1px solid rgba(120, 169, 214, 0.22);
+      box-shadow: 0 18px 42px rgba(0, 0, 0, 0.38);
+      backdrop-filter: blur(12px);
+    }
+
+    .born3d-play-gate {
+      top: 78px;
+      left: 18px;
+      width: min(380px, calc(100vw - 36px));
+      border-radius: 20px;
+      padding: 14px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .born3d-play-gate__header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .born3d-play-gate__title {
+      margin: 0;
+      font-size: 1.02rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .born3d-play-gate__status {
+      margin-top: 4px;
+      color: rgba(204, 227, 243, 0.78);
+      font-size: 0.8rem;
+      line-height: 1.4;
+    }
+
+    .born3d-play-gate__log {
+      display: grid;
+      gap: 6px;
+      max-height: 190px;
+      overflow: auto;
+      padding: 12px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      font-size: 0.83rem;
+      line-height: 1.45;
+    }
+
+    .born3d-play-gate__row {
+      color: #d9ecfa;
+    }
+
+    .born3d-play-gate__row strong {
+      color: #f5fbff;
+    }
+
+    .born3d-play-gate__actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .born3d-play-gate__actions button,
+    .born3d-play-taskbar button {
+      width: auto;
+      min-width: 0;
+    }
+
+    .born3d-play-taskbar {
+      left: 50%;
+      bottom: 18px;
+      transform: translateX(-50%);
+      border-radius: 18px;
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .born3d-play-taskbar__label {
+      color: rgba(234, 246, 255, 0.82);
+      font-size: 0.74rem;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .born3d-play-taskbar__spacer {
+      width: 1px;
+      height: 26px;
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    .born3d-play-taskbar.is-hidden {
+      display: none;
+    }
+
+    @media (max-width: 560px) {
+      .born3d-play-gate {
+        top: 64px;
+        left: 12px;
+        width: calc(100vw - 24px);
+      }
+
+      .born3d-play-taskbar {
+        left: 12px;
+        right: 12px;
+        transform: none;
+        justify-content: space-between;
+        gap: 8px;
+      }
+    }
+  </style>
 </head>
 <body class="game-page">
+  <div id="explorer" hidden></div>
+  <div class="game-play-toolbar" aria-label="Game site tools">
+    <span class="game-play-badge">Game Site</span>
+    <button id="copyGameLinkBtn" type="button">Copy Game Link</button>
+  </div>
+  <section id="born3dPlayGate" class="born3d-play-gate" aria-label="Game gate">
+    <div class="born3d-play-gate__header">
+      <div>
+        <h1 class="born3d-play-gate__title">Game Gate</h1>
+        <div id="born3dPlayStatus" class="born3d-play-gate__status">Loading the play page and requesting game mode...</div>
+      </div>
+      <button id="born3dPlayRetryBtn" type="button" class="secondary">Retry</button>
+    </div>
+    <div class="born3d-play-gate__log" id="born3dPlayLog" aria-live="polite">
+      <div class="born3d-play-gate__row"><strong>Boot:</strong> waiting for the 3D engine.</div>
+      <div class="born3d-play-gate__row"><strong>Gate:</strong> sign in when the backend URL is ready.</div>
+      <div class="born3d-play-gate__row"><strong>Tip:</strong> if the scene looks blank, press Retry.</div>
+    </div>
+    <div class="born3d-play-gate__actions">
+      <button id="born3dPlayGameBtn" type="button">Enter Game</button>
+      <button id="born3dPlayHideBtn" type="button" class="secondary">Hide Gate</button>
+    </div>
+  </section>
+  <div id="born3dPlayTaskbar" class="born3d-play-taskbar" aria-label="Play taskbar">
+    <span class="born3d-play-taskbar__label">UI Task Bar</span>
+    <span class="born3d-play-taskbar__spacer" aria-hidden="true"></span>
+    <button id="born3dPlayTaskGateBtn" type="button" class="secondary">Gate</button>
+    <button id="born3dPlayTaskRetryBtn" type="button" class="secondary">Retry</button>
+  </div>
   <main class="main-flex-row">
     <section id="viewport" class="viewport-flex">
       <!-- 3D canvas will be injected here -->
@@ -25,5 +232,56 @@
   <script src="https://cdn.jsdelivr.net/npm/three@0.145.0/examples/js/loaders/GLTFLoader.js"></script>
   <script src="src/propLoader.js?v=20260419-gameplay1"></script>
   <script src="src/app.js?v=20260419-gameplay1"></script>
+  <script>
+    const copyGameLinkBtn = document.getElementById("copyGameLinkBtn");
+    if (copyGameLinkBtn) {
+      const GAME_BACKEND_STORAGE_KEY = "born3d_backend_url";
+      const isPrivateOrLocalHost = (hostname) => {
+        const host = String(hostname || "").toLowerCase();
+        if (!host) return false;
+        if (host === "localhost" || host === "127.0.0.1" || host === "0.0.0.0") return true;
+        if (/^\d+\.\d+\.\d+\.\d+$/.test(host)) {
+          return (
+            host.startsWith("10.") ||
+            host.startsWith("192.168.") ||
+            /^172\.(1[6-9]|2\d|3[0-1])\./.test(host)
+          );
+        }
+        return false;
+      };
+      const buildShareUrl = () => {
+        const url = new URL(window.location.href);
+        const useCanonicalLocalPorts = isPrivateOrLocalHost(url.hostname);
+        try {
+          const storedBackend = window.localStorage.getItem(GAME_BACKEND_STORAGE_KEY);
+          if (storedBackend && !url.searchParams.get("backend")) {
+            url.searchParams.set("backend", storedBackend);
+          }
+        } catch (error) {}
+        if (useCanonicalLocalPorts) {
+          url.pathname = "/play";
+          url.port = "3000";
+          if (!url.searchParams.get("backend")) {
+            url.searchParams.set("backend", `${url.protocol}//${url.hostname}:4000`);
+          }
+        }
+        return url.toString();
+      };
+
+      copyGameLinkBtn.addEventListener("click", async () => {
+        const gameUrl = buildShareUrl();
+        try {
+          await navigator.clipboard.writeText(gameUrl);
+          copyGameLinkBtn.textContent = "Copied Game Link";
+          window.setTimeout(() => {
+            copyGameLinkBtn.textContent = "Copy Game Link";
+          }, 1500);
+        } catch (error) {
+          window.prompt("Copy this game link", gameUrl);
+        }
+      });
+    }
+  </script>
+  <script src="src/play-boot.js?v=20260419-gameplay2"></script>
 </body>
 </html>
