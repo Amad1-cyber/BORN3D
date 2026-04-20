@@ -14,4 +14,4 @@ services:
     rootDir: cloud-backend
     buildCommand: npm install
     startCommand: npm start
-    healthCheckPath: /api/login
+    healthCheckPath: /play
