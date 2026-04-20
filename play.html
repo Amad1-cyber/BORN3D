@@ -7,7 +7,12 @@
   <meta name="author" content="Ahmed Othmen">
   <meta name="theme-color" content="#091018">
   <script>
-    window.BORN3D_DEFAULT_BACKEND = "https://born3d-backend.onrender.com";
+    window.BORN3D_DEFAULT_BACKEND = (function () {
+      if (window.location && /\.onrender\.com$/i.test(window.location.hostname)) {
+        return window.location.origin;
+      }
+      return `${window.location.protocol}//${window.location.hostname}:4000`;
+    })();
     (function () {
       function normalizeBackendUrl(value) {
         const text = String(value || "").trim();
@@ -260,15 +265,19 @@
       display: none;
     }
 
+    .born3d-play-console-toggle {
+      display: none;
+    }
+
+    .born3d-play-console-toggle.is-visible {
+      display: block;
+    }
+
     @media (max-width: 560px) {
       .born3d-play-gate {
         top: 64px;
         left: 12px;
         width: calc(100vw - 24px);
-      }
-
-      .born3d-play-gate__grid {
-        grid-template-columns: 1fr;
       }
 
       .born3d-play-taskbar {
@@ -451,6 +460,6 @@
       });
     }
   </script>
-  <script src="src/play-boot.js?v=20260419-gameplay2"></script>
+  <script src="src/play-boot.js?v=20260419-gameplay4"></script>
 </body>
 </html>
