@@ -6,6 +6,56 @@
   <title>Born 3D - Game Mode (Born3D)</title>
   <meta name="author" content="Ahmed Othmen">
   <meta name="theme-color" content="#091018">
+  <script>
+    window.BORN3D_DEFAULT_BACKEND = "https://born3d-backend.onrender.com";
+    (function () {
+      function normalizeBackendUrl(value) {
+        const text = String(value || "").trim();
+        if (!text) {
+          return "";
+        }
+
+        const withProtocol = /^[a-z]+:\/\//i.test(text)
+          ? text
+          : `${window.location.protocol}//${text}`;
+
+        try {
+          const url = new URL(withProtocol);
+          return `${url.protocol}//${url.host}`;
+        } catch (error) {
+          return "";
+        }
+      }
+
+      function shouldReplaceStoredBackend(storedBackend) {
+        const backend = normalizeBackendUrl(storedBackend);
+        const defaultBackend = normalizeBackendUrl(window.BORN3D_DEFAULT_BACKEND);
+        if (!backend || !defaultBackend) {
+          return false;
+        }
+
+        try {
+          const backendHost = new URL(backend).hostname;
+          const defaultHost = new URL(defaultBackend).hostname;
+          return backendHost === window.location.hostname && defaultHost !== backendHost;
+        } catch (error) {
+          return false;
+        }
+      }
+
+      try {
+        const key = "born3d_backend_url";
+        const params = new URLSearchParams(window.location.search);
+        const queryBackend = normalizeBackendUrl(params.get("backend"));
+        const storedBackend = normalizeBackendUrl(window.localStorage.getItem(key));
+        const defaultBackend = normalizeBackendUrl(window.BORN3D_DEFAULT_BACKEND);
+        const backend = queryBackend || (shouldReplaceStoredBackend(storedBackend) ? defaultBackend : storedBackend) || defaultBackend;
+        if (backend) {
+          window.localStorage.setItem(key, backend);
+        }
+      } catch (error) {}
+    })();
+  </script>
   <link rel="stylesheet" href="styles/main.css?v=20260419-gameplay1">
   <style>
     .game-page {
@@ -134,6 +184,36 @@
       gap: 8px;
     }
 
+    .born3d-play-gate__form {
+      display: grid;
+      gap: 10px;
+    }
+
+    .born3d-play-gate__field {
+      display: grid;
+      gap: 6px;
+    }
+
+    .born3d-play-gate__field span {
+      color: rgba(227, 241, 253, 0.82);
+      font-size: 0.74rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .born3d-play-gate__grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .born3d-play-gate__hint {
+      color: rgba(204, 227, 243, 0.72);
+      font-size: 0.76rem;
+      line-height: 1.45;
+    }
+
     .born3d-play-gate__actions button,
     .born3d-play-taskbar button {
       width: auto;
@@ -206,8 +286,42 @@
       <div class="born3d-play-gate__row"><strong>Gate:</strong> sign in when the backend URL is ready.</div>
       <div class="born3d-play-gate__row"><strong>Tip:</strong> if the scene looks blank, press Retry.</div>
     </div>
+    <form id="born3dPlayLoginForm" class="born3d-play-gate__form">
+      <label class="born3d-play-gate__field">
+        <span>Backend URL</span>
+        <input id="born3dPlayBackendInput" type="text" placeholder="https://born3d-play.onrender.com">
+      </label>
+      <div class="born3d-play-gate__grid">
+        <label class="born3d-play-gate__field">
+          <span>Username</span>
+          <input id="born3dPlayUserNameInput" type="text" autocomplete="username" placeholder="Enter username">
+        </label>
+        <label class="born3d-play-gate__field">
+          <span>Pin</span>
+          <input id="born3dPlayPinInput" type="password" autocomplete="current-password" placeholder="Enter pin">
+        </label>
+      </div>
+      <div class="born3d-play-gate__grid">
+        <label class="born3d-play-gate__field">
+          <span>Avatar</span>
+          <select id="born3dPlayAvatarSelect">
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+          </select>
+        </label>
+        <label class="born3d-play-gate__field">
+          <span>Shard</span>
+          <select id="born3dPlayShardSelect">
+            <option value="odd-ironic-shard">Odd Ironic Shard</option>
+          </select>
+        </label>
+      </div>
+      <div id="born3dPlayBackendLabel" class="born3d-play-gate__hint">The play page will reuse the backend from the URL or the field above.</div>
+    </form>
     <div class="born3d-play-gate__actions">
       <button id="born3dPlayGameBtn" type="button">Enter Game</button>
+      <button id="born3dPlayLoginBtn" type="button">Login &amp; Play</button>
+      <button id="born3dPlayRegisterBtn" type="button" class="secondary">Register</button>
       <button id="born3dPlayHideBtn" type="button" class="secondary">Hide Gate</button>
     </div>
   </section>
@@ -252,10 +366,43 @@
       const buildShareUrl = () => {
         const url = new URL(window.location.href);
         const useCanonicalLocalPorts = isPrivateOrLocalHost(url.hostname);
+        const normalizeBackendUrl = (value) => {
+          const text = String(value || "").trim();
+          if (!text) {
+            return "";
+          }
+          const withProtocol = /^[a-z]+:\/\//i.test(text)
+            ? text
+            : `${window.location.protocol}//${text}`;
+          try {
+            const parsed = new URL(withProtocol);
+            return `${parsed.protocol}//${parsed.host}`;
+          } catch (error) {
+            return "";
+          }
+        };
+        const shouldReplaceStoredBackend = (storedBackend) => {
+          const backend = normalizeBackendUrl(storedBackend);
+          const defaultBackend = normalizeBackendUrl(window.BORN3D_DEFAULT_BACKEND);
+          if (!backend || !defaultBackend) {
+            return false;
+          }
+          try {
+            const backendHost = new URL(backend).hostname;
+            const defaultHost = new URL(defaultBackend).hostname;
+            return backendHost === window.location.hostname && defaultHost !== backendHost;
+          } catch (error) {
+            return false;
+          }
+        };
         try {
-          const storedBackend = window.localStorage.getItem(GAME_BACKEND_STORAGE_KEY);
-          if (storedBackend && !url.searchParams.get("backend")) {
-            url.searchParams.set("backend", storedBackend);
+          const storedBackend = normalizeBackendUrl(window.localStorage.getItem(GAME_BACKEND_STORAGE_KEY));
+          const defaultBackend = normalizeBackendUrl(window.BORN3D_DEFAULT_BACKEND);
+          if (!url.searchParams.get("backend")) {
+            const backend = shouldReplaceStoredBackend(storedBackend) ? defaultBackend : storedBackend;
+            if (backend) {
+              url.searchParams.set("backend", backend);
+            }
           }
         } catch (error) {}
         if (useCanonicalLocalPorts) {
