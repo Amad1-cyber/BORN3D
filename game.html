@@ -5,14 +5,366 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Born 3D - Game Play</title>
   <meta name="author" content="Ahmed Othmen">
+  <script>
+    window.BORN3D_DEFAULT_BACKEND = (function () {
+      if (window.location && /\.onrender\.com$/i.test(window.location.hostname)) {
+        return window.location.origin;
+      }
+      return `${window.location.protocol}//${window.location.hostname}:4000`;
+    })();
+    (function () {
+      function normalizeBackendUrl(value) {
+        const text = String(value || "").trim();
+        if (!text) {
+          return "";
+        }
+
+        const withProtocol = /^[a-z]+:\/\//i.test(text)
+          ? text
+          : `${window.location.protocol}//${text}`;
+
+        try {
+          const url = new URL(withProtocol);
+          return `${url.protocol}//${url.host}`;
+        } catch (error) {
+          return "";
+        }
+      }
+
+      function shouldReplaceStoredBackend(storedBackend) {
+        const backend = normalizeBackendUrl(storedBackend);
+        const defaultBackend = normalizeBackendUrl(window.BORN3D_DEFAULT_BACKEND);
+        if (!backend || !defaultBackend) {
+          return false;
+        }
+
+        try {
+          const backendHost = new URL(backend).hostname;
+          const defaultHost = new URL(defaultBackend).hostname;
+          return backendHost === window.location.hostname && defaultHost !== backendHost;
+        } catch (error) {
+          return false;
+        }
+      }
+
+      try {
+        const key = "born3d_backend_url";
+        const params = new URLSearchParams(window.location.search);
+        const queryBackend = normalizeBackendUrl(params.get("backend"));
+        const storedBackend = normalizeBackendUrl(window.localStorage.getItem(key));
+        const defaultBackend = normalizeBackendUrl(window.BORN3D_DEFAULT_BACKEND);
+        const backend = queryBackend || (shouldReplaceStoredBackend(storedBackend) ? defaultBackend : storedBackend) || defaultBackend;
+        if (backend) {
+          window.localStorage.setItem(key, backend);
+        }
+      } catch (error) {}
+    })();
+  </script>
   <link rel="stylesheet" href="styles/main.css?v=20260419-gameplay1">
   <link rel="stylesheet" href="src/game.css?v=20260419-gameplay1">
+  <style>
+    .game-page {
+      overflow: hidden;
+      min-height: 100vh;
+      background: #091018;
+    }
+
+    .game-page main {
+      position: fixed;
+      inset: 0;
+      display: block;
+      padding: 0;
+      margin: 0;
+    }
+
+    .game-page #viewport {
+      width: 100vw;
+      height: 100vh;
+      max-width: none;
+      aspect-ratio: auto;
+      justify-self: stretch;
+      align-self: stretch;
+      border-radius: 0;
+      border: none;
+    }
+
+    #explorer {
+      display: none;
+    }
+
+    .game-play-toolbar {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      z-index: 5200;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      pointer-events: none;
+    }
+
+    .game-play-badge {
+      pointer-events: none;
+      padding: 0.45rem 0.8rem;
+      border-radius: 999px;
+      background: rgba(8, 14, 22, 0.82);
+      border: 1px solid rgba(120, 169, 214, 0.18);
+      color: #eaf6ff;
+      font-size: 0.74rem;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      box-shadow: 0 14px 30px rgba(0, 0, 0, 0.28);
+    }
+
+    .game-play-toolbar button {
+      pointer-events: auto;
+      width: auto;
+      min-width: 0;
+      padding: 0.72rem 0.95rem;
+    }
+
+    .born3d-play-gate,
+    .born3d-play-taskbar {
+      position: fixed;
+      z-index: 5400;
+      color: #eef8ff;
+      background: rgba(8, 14, 22, 0.9);
+      border: 1px solid rgba(120, 169, 214, 0.22);
+      box-shadow: 0 18px 42px rgba(0, 0, 0, 0.38);
+      backdrop-filter: blur(12px);
+    }
+
+    .born3d-play-gate {
+      top: 78px;
+      left: 18px;
+      width: min(380px, calc(100vw - 36px));
+      border-radius: 20px;
+      padding: 14px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .born3d-play-gate[data-compact="true"] .born3d-play-gate__log,
+    .born3d-play-gate[data-compact="true"] .born3d-play-gate__form,
+    .born3d-play-gate[data-compact="true"] .born3d-play-gate__actions {
+      display: none;
+    }
+
+    .born3d-play-gate__header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .born3d-play-gate__title {
+      margin: 0;
+      font-size: 1.02rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .born3d-play-gate__status {
+      margin-top: 4px;
+      color: rgba(204, 227, 243, 0.78);
+      font-size: 0.8rem;
+      line-height: 1.4;
+    }
+
+    .born3d-play-gate__log {
+      display: grid;
+      gap: 6px;
+      max-height: 190px;
+      overflow: auto;
+      padding: 12px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      font-size: 0.83rem;
+      line-height: 1.45;
+    }
+
+    .born3d-play-gate__row {
+      color: #d9ecfa;
+    }
+
+    .born3d-play-gate__row strong {
+      color: #f5fbff;
+    }
+
+    .born3d-play-gate__actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .born3d-play-gate__form {
+      display: grid;
+      gap: 10px;
+    }
+
+    .born3d-play-gate__field {
+      display: grid;
+      gap: 6px;
+    }
+
+    .born3d-play-gate__field span {
+      color: rgba(227, 241, 253, 0.82);
+      font-size: 0.74rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .born3d-play-gate__grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .born3d-play-gate__hint {
+      color: rgba(204, 227, 243, 0.72);
+      font-size: 0.76rem;
+      line-height: 1.45;
+    }
+
+    .born3d-play-gate__actions button,
+    .born3d-play-taskbar button {
+      width: auto;
+      min-width: 0;
+    }
+
+    .born3d-play-taskbar {
+      left: 50%;
+      bottom: 18px;
+      transform: translateX(-50%);
+      border-radius: 18px;
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .born3d-play-taskbar__label {
+      color: rgba(234, 246, 255, 0.82);
+      font-size: 0.74rem;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .born3d-play-taskbar__spacer {
+      width: 1px;
+      height: 26px;
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    .born3d-play-taskbar.is-hidden {
+      display: none;
+    }
+
+    .born3d-play-console-toggle {
+      display: none;
+    }
+
+    .born3d-play-console-toggle.is-visible {
+      display: block;
+    }
+
+    @media (max-width: 560px) {
+      .born3d-play-gate {
+        top: 64px;
+        left: 12px;
+        width: calc(100vw - 24px);
+      }
+
+      .born3d-play-gate__grid {
+        grid-template-columns: 1fr;
+      }
+
+      .born3d-play-taskbar {
+        left: 12px;
+        right: 12px;
+        transform: none;
+        justify-content: space-between;
+        gap: 8px;
+      }
+    }
+  </style>
 </head>
 <body class="game-page">
   <div id="explorer"></div>
+  <div id="authBridge" aria-hidden="true" hidden>
+    <input id="userNameInput" type="text" value="">
+    <input id="userPinInput" type="password" value="">
+    <div id="userStatus"></div>
+  </div>
   <div class="game-play-toolbar" aria-label="Game site tools">
     <span class="game-play-badge">Game Site</span>
     <button id="copyGameLinkBtn" type="button">Copy Game Link</button>
+  </div>
+  <section id="born3dPlayGate" class="born3d-play-gate" aria-label="Game gate">
+    <div class="born3d-play-gate__header">
+      <div>
+        <h1 class="born3d-play-gate__title">Game Gate</h1>
+        <div id="born3dPlayStatus" class="born3d-play-gate__status">Loading the play page and requesting game mode...</div>
+      </div>
+      <button id="born3dPlayRetryBtn" type="button" class="secondary">Retry</button>
+    </div>
+    <div class="born3d-play-gate__log" id="born3dPlayLog" aria-live="polite">
+      <div class="born3d-play-gate__row"><strong>Boot:</strong> waiting for the 3D engine.</div>
+      <div class="born3d-play-gate__row"><strong>Gate:</strong> sign in when the backend URL is ready.</div>
+      <div class="born3d-play-gate__row"><strong>Tip:</strong> if the scene looks blank, press Retry.</div>
+    </div>
+    <form id="born3dPlayLoginForm" class="born3d-play-gate__form">
+      <label class="born3d-play-gate__field">
+        <span>Backend URL</span>
+        <input id="born3dPlayBackendInput" type="text" placeholder="https://born3d-play.onrender.com">
+      </label>
+      <div class="born3d-play-gate__grid">
+        <label class="born3d-play-gate__field">
+          <span>Username</span>
+          <input id="born3dPlayUserNameInput" type="text" autocomplete="username" placeholder="Enter username">
+        </label>
+        <label class="born3d-play-gate__field">
+          <span>Pin</span>
+          <input id="born3dPlayPinInput" type="password" autocomplete="current-password" placeholder="Enter pin">
+        </label>
+      </div>
+      <div class="born3d-play-gate__grid">
+        <label class="born3d-play-gate__field">
+          <span>Avatar</span>
+          <select id="born3dPlayAvatarSelect">
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+          </select>
+        </label>
+        <label class="born3d-play-gate__field">
+          <span>Shard</span>
+          <select id="born3dPlayShardSelect">
+            <option value="odd-ironic-shard">Odd Ironic Shard</option>
+          </select>
+        </label>
+      </div>
+      <div id="born3dPlayBackendLabel" class="born3d-play-gate__hint">The play page will reuse the backend from the URL or the field above.</div>
+    </form>
+    <div class="born3d-play-gate__actions">
+      <button id="born3dPlayGameBtn" type="button">Enter Game</button>
+      <button id="born3dPlayLoginBtn" type="button">Login &amp; Play</button>
+      <button id="born3dPlayRegisterBtn" type="button" class="secondary">Register</button>
+      <button id="born3dPlayCompactBtn" type="button" class="secondary">Compact</button>
+      <button id="born3dPlayHideBtn" type="button" class="secondary">Hide Gate</button>
+    </div>
+  </section>
+  <div id="born3dPlayTaskbar" class="born3d-play-taskbar" aria-label="Play taskbar">
+    <span class="born3d-play-taskbar__label">UI Task Bar</span>
+    <span class="born3d-play-taskbar__spacer" aria-hidden="true"></span>
+    <button id="born3dPlayTaskGateBtn" type="button" class="secondary">Gate</button>
+    <button id="born3dPlayTaskConsoleBtn" type="button" class="secondary">Console</button>
+    <button id="born3dPlayTaskCompactBtn" type="button" class="secondary">Compact</button>
+    <button id="born3dPlayTaskRetryBtn" type="button" class="secondary">Retry</button>
   </div>
   <main class="main-flex-row">
     <section id="viewport" class="viewport-flex">
@@ -20,7 +372,7 @@
     </section>
   </main>
   <script>
-    window.BORN3D_GAME_ONLY = true;
+    window.BORN3D_GAME_ONLY = false;
   </script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.145.0/build/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.145.0/examples/js/loaders/OBJLoader.js"></script>
@@ -49,10 +401,43 @@
       const buildShareUrl = () => {
         const url = new URL(window.location.href);
         const useCanonicalLocalPorts = isPrivateOrLocalHost(url.hostname);
+        const normalizeBackendUrl = (value) => {
+          const text = String(value || "").trim();
+          if (!text) {
+            return "";
+          }
+          const withProtocol = /^[a-z]+:\/\//i.test(text)
+            ? text
+            : `${window.location.protocol}//${text}`;
+          try {
+            const parsed = new URL(withProtocol);
+            return `${parsed.protocol}//${parsed.host}`;
+          } catch (error) {
+            return "";
+          }
+        };
+        const shouldReplaceStoredBackend = (storedBackend) => {
+          const backend = normalizeBackendUrl(storedBackend);
+          const defaultBackend = normalizeBackendUrl(window.BORN3D_DEFAULT_BACKEND);
+          if (!backend || !defaultBackend) {
+            return false;
+          }
+          try {
+            const backendHost = new URL(backend).hostname;
+            const defaultHost = new URL(defaultBackend).hostname;
+            return backendHost === window.location.hostname && defaultHost !== backendHost;
+          } catch (error) {
+            return false;
+          }
+        };
         try {
-          const storedBackend = window.localStorage.getItem(GAME_BACKEND_STORAGE_KEY);
-          if (storedBackend && !url.searchParams.get("backend")) {
-            url.searchParams.set("backend", storedBackend);
+          const storedBackend = normalizeBackendUrl(window.localStorage.getItem(GAME_BACKEND_STORAGE_KEY));
+          const defaultBackend = normalizeBackendUrl(window.BORN3D_DEFAULT_BACKEND);
+          if (!url.searchParams.get("backend")) {
+            const backend = shouldReplaceStoredBackend(storedBackend) ? defaultBackend : storedBackend;
+            if (backend) {
+              url.searchParams.set("backend", backend);
+            }
           }
         } catch (error) {}
         if (useCanonicalLocalPorts) {
@@ -79,6 +464,6 @@
       });
     }
   </script>
-  <script src="src/play-boot.js?v=20260419-gameplay2"></script>
+  <script src="src/play-boot.js?v=20260419-gameplay4"></script>
 </body>
 </html>
