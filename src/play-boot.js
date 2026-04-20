@@ -3,19 +3,17 @@
   const gateId = "born3dPlayGate";
   const statusId = "born3dPlayStatus";
   const logId = "born3dPlayLog";
-  const taskbarId = "born3dPlayTaskbar";
   const hiddenExplorerId = "explorer";
 
   function $(id) {
     return document.getElementById(id);
   }
 
-  function ensureHiddenExplorer() {
+  function ensureExplorer() {
     let explorer = $(hiddenExplorerId);
     if (!explorer) {
       explorer = document.createElement("div");
       explorer.id = hiddenExplorerId;
-      explorer.hidden = true;
       document.body.appendChild(explorer);
     }
     return explorer;
@@ -45,13 +43,6 @@
     const gate = $(gateId);
     if (gate) {
       gate.hidden = false;
-    }
-  }
-
-  function hideGate() {
-    const gate = $(gateId);
-    if (gate) {
-      gate.hidden = true;
     }
   }
 
@@ -115,7 +106,7 @@
   }
 
   function boot() {
-    ensureHiddenExplorer();
+    ensureExplorer();
     syncBackendFromQuery();
     wireControls();
 
