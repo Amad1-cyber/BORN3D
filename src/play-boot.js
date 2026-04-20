@@ -114,13 +114,13 @@
   }
 
   function getDefaultBackend() {
+    if (window.location && /\.onrender\.com$/i.test(window.location.hostname)) {
+      return window.location.origin;
+    }
+
     const explicitDefault = normalizeBackendUrl(window.BORN3D_DEFAULT_BACKEND);
     if (explicitDefault) {
       return explicitDefault;
-    }
-
-    if (window.location && /\.onrender\.com$/i.test(window.location.hostname)) {
-      return "https://born3d-backend.onrender.com";
     }
 
     if (window.location && window.location.hostname) {
@@ -144,6 +144,9 @@
     try {
       const backendHost = new URL(backend).hostname;
       const defaultHost = new URL(defaultBackend).hostname;
+      if (/\.onrender\.com$/i.test(window.location.hostname)) {
+        return backendHost !== window.location.hostname;
+      }
       return backendHost === window.location.hostname && defaultHost !== backendHost;
     } catch (error) {
       return false;
